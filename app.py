@@ -4,7 +4,7 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_py
 from mediapipe.tasks.python import vision as mp_vis
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
+#CONFIG
 PUZZLE_W, PUZZLE_H = 300, 300
 SCORES_FILE = os.path.join(os.path.dirname(__file__), 'highscores.json')
 DIFFICULTIES = {
@@ -20,7 +20,7 @@ HAND_CONNECTIONS = [
 FINGERTIP_IDS = [4, 8, 12, 16, 20]
 FINGER_PIP_IDS = [3, 6, 10, 14, 18]
 
-# ── PARTICLES ─────────────────────────────────────────────────────────────────
+# ── PARTICLES
 class Particle:
     __slots__ = ['x','y','vx','vy','color','life','max_life','size','grav']
     def __init__(self, x, y, vx, vy, color, life, size=4, grav=0.25):
@@ -48,7 +48,7 @@ def emit_trail(particles, x, y):
                                   random.uniform(-0.8,0.8),random.uniform(-1.5,0.2),
                                   c,random.randint(8,18),random.randint(2,5),grav=0.04))
 
-# ── PUZZLE PIECE ──────────────────────────────────────────────────────────────
+# PUZZLE PIECE  
 class PuzzlePiece:
     def __init__(self, img, correct_pos, start_pos, size):
         self.image = img
@@ -63,7 +63,7 @@ class PuzzlePiece:
     def hovered(self, fx, fy):
         return self.x<=fx<=self.x+self.size[0] and self.y<=fy<=self.y+self.size[1]
 
-# ── HIGH SCORES ───────────────────────────────────────────────────────────────
+# HIGH SCORES
 def load_scores():
     try:
         if os.path.exists(SCORES_FILE):
@@ -76,7 +76,7 @@ def save_score(scores, name, elapsed):
     scores[name] = sorted(scores[name])[:5]
     json.dump(scores, open(SCORES_FILE,'w'), indent=2)
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
+# HELPERS    
 def txt(frame, text, pos, scale, color, thick=2, font=cv2.FONT_HERSHEY_DUPLEX):
     x,y = pos
     cv2.putText(frame,text,(x+2,y+2),font,scale,(0,0,0),thick+2)
@@ -111,13 +111,13 @@ def build_pieces(src, cols, rows, pw, ph, tx, ty, fw, fh):
             out.append(PuzzlePiece(seg,(c,r),pos[i],(pw,ph))); i+=1
     return out
 
-# ── MEDIAPIPE ─────────────────────────────────────────────────────────────────
+#MEDIAPIPE
 detector = mp_vis.HandLandmarker.create_from_options(
     mp_vis.HandLandmarkerOptions(
         base_options=mp_py.BaseOptions(model_asset_path='hand_landmarker.task'),
         num_hands=2, min_hand_detection_confidence=0.65, min_tracking_confidence=0.65))
 
-# ── WEBCAM + CONSTANTS ────────────────────────────────────────────────────────
+# WEBCAM + CONSTANTS
 cap = cv2.VideoCapture(0)
 if not cap.isOpened(): raise RuntimeError("Cannot open webcam.")
 ret, _p = cap.read()
@@ -128,7 +128,7 @@ raw = cv2.imread('puzzle_source.png')
 SRC_BASE = cv2.resize(raw if raw is not None else make_placeholder(),(PUZZLE_W,PUZZLE_H))
 THUMB = cv2.resize(SRC_BASE,(90,90))
 
-# ── GAME STATE ────────────────────────────────────────────────────────────────
+#GAME STATE
 scores = load_scores()
 state = 'menu'
 diff_name,cols,rows,time_limit = DIFFICULTIES['1']
@@ -162,7 +162,7 @@ def shuffle_pieces():
             p.y=float(random.randint(60,max(65,FH-ph-10)))
             p.home_x,p.home_y = p.x,p.y
 
-# ── MAIN LOOP ─────────────────────────────────────────────────────────────────
+# MAIN LOOP
 try:
     while cap.isOpened():
         ok,frame = cap.read()
@@ -172,8 +172,8 @@ try:
             continue
         fail_count=0
         frame = cv2.flip(frame,1)
-
-        # ── MENU ──────────────────────────────────────────────────────────────
+    
+        # MENU
         if state == 'menu':
             ov = frame.copy()
             cv2.rectangle(ov,(0,0),(FW,FH),(10,10,22),cv2.FILLED)
@@ -199,7 +199,7 @@ try:
             if chr(key) in DIFFICULTIES: start_game(chr(key))
             continue
 
-        # ── PLAYING ───────────────────────────────────────────────────────────
+        # PLAYING
         if state == 'playing':
             elapsed = time.time()-t_start
             time_left = max(0.0, time_limit-elapsed)
@@ -222,7 +222,7 @@ try:
             cv2.rectangle(frame,(tx2,ty2),(tx2+90,ty2+90),(160,160,160),1)
             cv2.putText(frame,"REF",(tx2+28,ty2+90+14),cv2.FONT_HERSHEY_SIMPLEX,0.4,(160,160,160),1)
 
-            # ── Hand detection ────────────────────────────────────────────────
+            # Hand detection
             active = {}   # hand_idx -> (ix,iy,pinching)
             if res.hand_landmarks:
                 for hi,lms in enumerate(res.hand_landmarks):
@@ -260,7 +260,7 @@ try:
 
             if shuffle_cd>0: shuffle_cd-=1
 
-            # ── Ghost preview ─────────────────────────────────────────────────
+            # Ghost preview
             for hi,(ix,iy,pinch) in active.items():
                 if pinch and hi in sel:
                     hp=sel[hi]
@@ -272,7 +272,7 @@ try:
                         cv2.addWeighted(ov2,0.25,frame,0.75,0,frame)
                         cv2.rectangle(frame,(gx,gy),(gx+pw,gy+ph),(0,220,255),2)
 
-            # ── Drag & drop ───────────────────────────────────────────────────
+            # Drag & drop 
             for hi,(ix,iy,pinch) in active.items():
                 if pinch:
                     if hi not in sel:
@@ -305,7 +305,7 @@ try:
             for hi in [h for h in sel if h not in active]:
                 sel[hi].is_dragging=False; del sel[hi]
 
-            # ── Render pieces ─────────────────────────────────────────────────
+            # Render pieces
             for p in pieces:
                 py1=max(0,int(p.y)); py2=min(FH,int(p.y)+ph)
                 px1=max(0,int(p.x)); px2=min(FW,int(p.x)+pw)
@@ -328,19 +328,19 @@ try:
                         p.snap_glow-=1
                 if p.flash>0: p.flash-=1
 
-            # ── Particles ─────────────────────────────────────────────────────
+            # Particles
             for part in particles[:]:
                 part.update(); part.draw(frame)
                 if part.life<=0: particles.remove(part)
 
-            # ── Penalty screen flash ──────────────────────────────────────────
+            #  Penalty screen flash 
             if G['penalty_flash']>0:
                 ov3=frame.copy()
                 cv2.rectangle(ov3,(0,0),(FW,FH),(0,0,200),cv2.FILLED)
                 cv2.addWeighted(ov3,0.25,frame,0.75,0,frame)
                 G['penalty_flash']-=1
 
-            # ── Shuffle progress indicator ────────────────────────────────────
+            #  Shuffle progress indicator 
             for hi,ts in palm_timers.items():
                 prog=min(1.0,(time.time()-ts)/2.0)
                 if prog>0.05:
@@ -349,7 +349,7 @@ try:
                     txt(frame,"HOLD TO SHUFFLE",(FW//2-90,FH-35),0.5,(0,200,255),1,
                         font=cv2.FONT_HERSHEY_SIMPLEX)
 
-            # ── HUD ───────────────────────────────────────────────────────────
+            # HUD
             cv2.rectangle(frame,(0,0),(FW,52),(15,15,25),cv2.FILLED)
             ratio=time_left/time_limit
             bc=(0,200,80) if ratio>0.5 else (0,160,255) if ratio>0.2 else (0,50,255)
@@ -366,7 +366,7 @@ try:
 
             if time_left<=0: state='timeout'
 
-        # ── WIN ───────────────────────────────────────────────────────────────
+        # WIN
         if state == 'win':
             if G['win_flash']>0:
                 ov=frame.copy(); cv2.rectangle(ov,(0,0),(FW,FH),(255,255,255),cv2.FILLED)
@@ -391,7 +391,7 @@ try:
                 if len(particles)<80: emit_burst(particles,random.randint(50,FW-50),
                                                   random.randint(50,FH-50),5)
 
-        # ── TIMEOUT ───────────────────────────────────────────────────────────
+        #  TIMEOUT
         if state == 'timeout':
             ov=frame.copy()
             cv2.rectangle(ov,(0,0),(FW,FH),(20,10,10),cv2.FILLED)
